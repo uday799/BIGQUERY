@@ -1,0 +1,176 @@
+
+
+CREATE TABLE b51_dataset.student_records
+ (
+   rollNo INT,
+   info STRUCT<
+     name STRING,
+     age INT,
+     department STRING
+   >
+ )
+
+
+--creating table with struct values below:
+
+CREATE OR REPLACE TABLE b51_dataset.student_records AS (
+SELECT 1 AS rollNo, STRUCT("Isha" as name,22 as age,"Pharmacy" as department) AS info
+UNION ALL
+SELECT 2 AS rollNo, STRUCT("Yash" as name,22 as age,"Mechanical Engineering" as department) AS info
+UNION ALL 
+SELECT 3 AS rollNo, STRUCT("Siddhi" as name,18 as age,"Metallurgy" as department) AS info
+UNION ALL 
+SELECT 4 AS rollNo, STRUCT("Kushal" as name,21 as age,"Electrical Engineering" as department) AS info
+);
+
+
+SELECT rollNo, info.name, info.age from b47_dataset.student_records;
+
+
+SELECT * from b47_dataset.student_records
+WHERE info = ("Yash",22,"Mechanical Engineering");
+
+SELECT * from b47_dataset.student_records
+WHERE info NOT IN unnest([("Siddhi",18,"Metallurgy"), ("Kushal",21,"Electrical Engineering")]);
+
+--Below steps to select the josn schema from the console table:
+1. select table on the bq UI.
+2. select columns you would want to export schema for.
+3.  use the copy menu to copy schema as JSON.
+
+-----------------------------------------
+
+CREATE TABLE IF NOT EXISTS b43_dataset.orders
+(
+  order_id INT64,
+  customer_info STRUCT< name STRING, email STRING, address STRUCT< street STRING, city STRING, state STRING, zip STRING > >,
+  order_items ARRAY< STRUCT< product_id INT64, quantity INT64, unit_price FLOAT64 > >,
+  order_date DATE
+);
+
+
+INSERT INTO b51_dataset.orders(order_id, customer_info, order_items, order_date)
+VALUES
+  (1, STRUCT('John Doe' AS name, 'john.doe@example.com' AS email, STRUCT('123 Main St' AS street, 'Anytown' AS city,
+        'CA' AS state, '90210' AS zip) AS address), ARRAY[STRUCT(101 AS product_id, 2 AS quantity, 15.50 AS unit_price),
+    STRUCT(102 AS product_id, 1 AS quantity, 25.00 AS unit_price)], '2023-01-15'),
+  (2, STRUCT('Jane Smith' AS name, 'jane.smith@example.com' AS email, STRUCT('456 Oak Ave' AS street, 'Big City' AS city,
+        'NY' AS state, '10001' AS zip) AS address), ARRAY[STRUCT(201 AS product_id, 1 AS quantity, 99.99 AS unit_price)],
+    '2023-01-16'),
+  (3, STRUCT('Peter Jones' AS name, 'peter.jones@example.com' AS email, STRUCT('789 Pine Ln' AS street,
+        'Smallville' AS city, 'TX' AS state, '73301' AS zip) AS address), ARRAY[STRUCT(101 AS product_id, 1 AS quantity,
+      15.50 AS unit_price), STRUCT(301 AS product_id, 3 AS quantity, 5.75 AS unit_price), STRUCT(302 AS product_id, 1 AS quantity, 12.00 AS unit_price)], '2023-01-17');
+
+
+------------------------------------------------------------------------
+transaction table wit Struct data type:
+---------------------------------------
+
+CREATE TABLE `vaarahi-b46`.`b46_dataset`.`transaction_data`(
+  transaction_id STRING NOT NULL,
+  transaction_timestamp TIMESTAMP NOT NULL,
+  customer_id STRING,
+  amount FLOAT64,
+  currency STRING,
+  payment_method STRING,
+  is_fraudulent BOOLEAN,
+  items_purchased
+    ARRAY<
+      STRUCT<
+        item_id STRING,
+        item_name STRING,
+        quantity INT64,
+        price_per_unit FLOAT64>>,
+  shipping_address
+    STRUCT<
+      street STRING,
+      city STRING,
+      state STRING,
+      zip_code STRING,
+      country STRING>,
+  notes STRING);
+
+INSERT INTO `vaarahi-b46`.`b46_dataset`.`transaction_data`
+  (
+    transaction_id,
+    transaction_timestamp,
+    customer_id,
+    amount,
+    currency,
+    payment_method,
+    is_fraudulent,
+    items_purchased,
+    shipping_address,
+    notes)
+VALUES
+  (
+    'TRX001',
+    '2023-10-26 10:00:00 UTC',
+    'CUST001',
+    120.50,
+    'USD',
+    'Credit Card',
+    FALSE,
+    [
+      STRUCT('ITEM001', 'Laptop', 1, 1200.00),
+      STRUCT('ITEM002', 'Mouse', 2, 25.00)],
+    STRUCT('123 Main St', 'Anytown', 'CA', '90210', 'USA'),
+    'Standard delivery'),
+  (
+    'TRX002',
+    '2023-10-26 11:30:00 UTC',
+    'CUST002',
+    45.99,
+    'EUR',
+    'PayPal',
+    FALSE,
+    [STRUCT('ITEM003', 'Book', 3, 15.33)],
+    STRUCT('45 Rue de la Paix', 'Paris', NULL, '75001', 'France'),
+    NULL),
+  (
+    'TRX003',
+    '2023-10-26 12:45:00 UTC',
+    'CUST001',
+    25.00,
+    'USD',
+    'Debit Card',
+    TRUE,
+    [STRUCT('ITEM004', 'Coffee Mug', 1, 25.00)],
+    STRUCT('123 Main St', 'Anytown', 'CA', '90210', 'USA'),
+    'Potential fraud alert'),
+  (
+    'TRX004',
+    '2023-10-26 14:00:00 UTC',
+    'CUST003',
+    500.00,
+    'GBP',
+    'Bank Transfer',
+    FALSE,
+    [STRUCT('ITEM005', 'Smartphone', 1, 500.00)],
+    STRUCT('789 High St', 'London', NULL, 'SW1A 0AA', 'UK'),
+    'Expedited shipping'),
+  (
+    'TRX005',
+    '2023-10-26 15:15:00 UTC',
+    'CUST004',
+    15.75,
+    'CAD',
+    'Credit Card',
+    FALSE,
+    [STRUCT('ITEM006', 'T-Shirt', 1, 15.75)],
+    STRUCT('100 Queen St W', 'Toronto', 'ON', 'M5H 2N2', 'Canada'),
+    NULL);
+
+
+
+bq load \
+    --source_format=NEWLINE_DELIMITED_JSON \
+    --autodetect \
+    vaarahi-b46:b46_dataset.transaction_data \
+    ./transaction_data.json
+
+
+NDJSON records:
+{"transaction_id": "TRX001", "transaction_timestamp": "2023-10-26 10:00:00 UTC", "customer_id": "CUST001", "amount": 120.50, "currency": "USD", "payment_method": "Credit Card", "is_fraudulent": false, "items_purchased": [{"item_id": "ITEM001", "item_name": "Laptop", "quantity": 1, "price_per_unit": 1200.00}, {"item_id": "ITEM002", "item_name": "Mouse", "quantity": 2, "price_per_unit": 25.00}], "shipping_address": {"street": "123 Main St", "city": "Anytown", "state": "CA", "zip_code": "90210", "country": "USA"}, "notes": "Standard delivery"}
+
+{"transaction_id": "TRX002", "transaction_timestamp": "2023-10-26 11:30:00 UTC", "customer_id": "CUST002", "amount": 45.99, "currency": "EUR", "payment_method": "PayPal", "is_fraudulent": false, "items_purchased": [{"item_id": "ITEM003", "item_name": "Book", "quantity": 3, "price_per_unit": 15.33}], "shipping_address": {"street": "45 Rue de la Paix", "city": "Paris", "state": null, "zip_code": "75001", "country": "France"}, "notes": null}
