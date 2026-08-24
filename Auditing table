@@ -1,0 +1,34 @@
+6)create table audit_emp_dev.stage_audit_emp(
+  dataset_name string,
+  table_name string,
+  date_audit date,
+  total_record_count int64,
+  audited_by string
+)
+
+7)create table audit_emp_dev.history_audit_emp(
+  dataset_name string,
+  table_name string,
+  date_audit date,
+  total_record_count int64,
+  audited_by string
+)
+
+
+8)
+insert into `audit_emp_dev.stage_audit_emp`
+select 'audit_emp_dev' as dataset_name,
+'stage_audit_emp' as table_name,
+current_date() as date_audit,
+count(*) as total_record_count,
+"EMP-123" as audited_by
+from `stage_usecase_dev_emp.Employee`
+
+
+9)insert into `audit_emp_dev.history_audit_emp`
+select 'audit_emp_dev' as dataset_name,
+'history_audit_emp' as table_name,
+current_date() as date_audit,
+count(*) as total_record_count,
+"EMP-123" as audited_by
+from `history_usecase_dev_emp.Employee`
